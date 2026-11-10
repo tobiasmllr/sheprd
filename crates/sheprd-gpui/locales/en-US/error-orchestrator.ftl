@@ -1,6 +1,6 @@
 # The orchestrator: its issue and pull request records, their database,
-# and the agents it starts. Database, Git, GitLab, and system text stays as
-# it is in $error.
+# and the agents it starts. Database, Git, Forgejo, GitLab, and system text
+# stays as it is in $error.
 
 # $id is the text that was read, in quotes. bd is the Beads program.
 error-orchestrator-bead-id = Bead id { $id } is not one bd accepts
@@ -132,6 +132,26 @@ error-orchestrator-workspace-closed = This run's workspace is closed
 
 error-orchestrator-private-not-private = { $path } is not a private file or directory owned by this user
 error-orchestrator-private-prepare = Could not prepare { $path }: { $error }
+
+## Reading issues and pull requests from Forgejo. fj is the Forgejo CLI,
+## and fj auth login and fj auth add-token are commands to type.
+
+# $repository is the repository's owner and name, in quotes.
+error-orchestrator-forgejo-address = Forgejo's address for { $repository } is not valid
+error-orchestrator-forgejo-authentication = Forgejo refused the Forgejo CLI's token; sign in again with fj auth login or fj auth add-token
+error-orchestrator-forgejo-forbidden = Forgejo refused access to { $repository }; the token needs to read issues and repositories
+error-orchestrator-forgejo-insecure-remote = Forgejo shows { $repository } only when signed in, and a token is never sent over plain HTTP: use an https:// remote
+error-orchestrator-forgejo-json = Forgejo's answer is not the expected JSON: { $error }
+# $origin is the scheme and host tried, such as https://codeberg.org.
+error-orchestrator-forgejo-network = Forgejo could not be reached at { $origin }: { $error }
+error-orchestrator-forgejo-not-found = Forgejo shows no repository { $repository } to this token
+error-orchestrator-forgejo-rate-limit = Forgejo rate limit reached; it is read again later
+error-orchestrator-forgejo-read = Forgejo's answer could not be read: { $error }
+error-orchestrator-forgejo-sign-in = Forgejo shows { $repository } only when signed in: sign in to its host with the Forgejo CLI (fj auth login or fj auth add-token)
+error-orchestrator-forgejo-size = Forgejo's answer exceeded the size limit
+# $status is the HTTP status code.
+error-orchestrator-forgejo-status = Forgejo request failed (HTTP { $status })
+error-orchestrator-forgejo-token = The Forgejo token is not one an HTTP header can carry
 
 ## Reading issues and merge requests from GitLab. GITLAB_TOKEN is an
 ## environment variable, .envrc a file, read_api a token scope, and

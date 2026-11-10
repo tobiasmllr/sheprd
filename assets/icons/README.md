@@ -118,6 +118,11 @@ GPUI renders these as masks tinted by the current theme.
 (CC0-1.0), with its fill set to `currentColor` and its title removed. It
 identifies the service only and remains GitLab's trademark.
 
+`forgejo.svg` is Forgejo's mark from
+[Simple Icons 15.0.0](https://github.com/simple-icons/simple-icons/blob/15.0.0/icons/forgejo.svg)
+(CC0-1.0), with its fill set to `currentColor` and its title removed. It
+identifies the service only and remains Forgejo's trademark.
+
 `vscode.svg`, `error.svg`, and `pass.svg` are unchanged Codicons from Microsoft's
 vscode-codicons, under CC BY 4.0; `LICENSE-codicons` has the source revision,
 license, and trademark notice.

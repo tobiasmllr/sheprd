@@ -12,6 +12,7 @@ use std::{collections::HashMap, path::PathBuf, str::FromStr};
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, serde::Serialize, serde::Deserialize)]
 pub enum Provider {
     Azure,
+    Forgejo,
     Github,
     Gitlab,
     Beads,
@@ -21,6 +22,7 @@ impl Provider {
     pub fn as_str(self) -> &'static str {
         match self {
             Self::Azure => "azure",
+            Self::Forgejo => "forgejo",
             Self::Github => "github",
             Self::Gitlab => "gitlab",
             Self::Beads => "beads",
@@ -34,6 +36,7 @@ impl FromStr for Provider {
     fn from_str(value: &str) -> Result<Self> {
         match value {
             "azure" => Ok(Self::Azure),
+            "forgejo" => Ok(Self::Forgejo),
             "github" => Ok(Self::Github),
             "gitlab" => Ok(Self::Gitlab),
             "beads" => Ok(Self::Beads),
@@ -76,8 +79,8 @@ impl SourceKey {
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct ItemKey {
     pub source: SourceKey,
-    /// An issue's number, `pr/<number>` for a GitHub pull request or GitLab
-    /// merge request, or a Beads id.
+    /// An issue's number, `pr/<number>` for a GitHub or Forgejo pull request
+    /// or GitLab merge request, or a Beads id.
     pub native_id: String,
 }
 

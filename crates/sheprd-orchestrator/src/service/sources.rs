@@ -1,10 +1,12 @@
-//! Which sources a repository has, which this build reads, and the GitLab
-//! CLI's say in whether a remote is a GitLab project.
+//! Which sources a repository has, which this build reads, the GitLab and
+//! Forgejo CLIs' say in which forge a remote is on, and where a full listing
+//! is kept.
 
 use super::{
     Access, Item, Provider, RepoInfo, Result, SourceKey, SourceStatus, SyncState, Worker, azure,
-    gitlab,
+    forgejo, gitlab,
 };
+use chrono::Utc;
 use std::collections::{HashMap, HashSet};
 
 impl SyncState {
@@ -53,15 +55,67 @@ impl Worker {
     }
 }
 
-/// Makes `info`'s remote a GitLab source when glab knows its host; returns
-/// whether it changed. `cli` reads glab's config, only when needed.
+impl Worker {
+    /// Stores a complete `listing` of `key` when the database is `writable`;
+    /// a capped one, or any the database cannot take, is shown from memory.
+    pub(super) fn keep_listing(
+        &mut self,
+        key: &SourceKey,
+        listing: gitlab::Listing,
+        writable: bool,
+    ) -> Result<SyncState> {
+        let Some(store) = self.store.as_mut() else {
+            return Ok(SyncState::Unsupported);
+        };
+        let count = listing.items.len();
+        if !listing.complete || !writable {
+            self.uncached.insert(key.clone(), listing.items);
+            return Ok(if listing.complete {
+                SyncState::Synced {
+                    at: Utc::now(),
+                    count,
+                }
+            } else {
+                SyncState::Capped { count }
+            });
+        }
+        store.replace_items(key, &listing.items, &listing.checkpoint)?;
+        self.uncached.remove(key);
+        Ok(SyncState::Synced {
+            at: Utc::now(),
+            count,
+        })
+    }
+
+    /// Reads the shown remote as GitLab once glab knows its host, such as
+    /// through an `ssh_host` added after the repository was found, or as
+    /// Forgejo once fj does.
+    pub(super) fn recognize(
+        &mut self,
+        cli: impl FnOnce() -> Vec<gitlab::cli_hosts::CliHost>,
+        keys: impl FnOnce() -> forgejo::cli_keys::Keys,
+    ) {
+        let Some(mut info) = self.snapshot.repo.clone() else {
+            return;
+        };
+        if recognize(&mut info, cli, keys) {
+            self.snapshot.sources = statuses(&info);
+            self.snapshot.repo = Some(info);
+        }
+    }
+}
+
+/// Makes `info`'s remote a GitLab source when glab knows its host, else a
+/// Forgejo one when fj does; returns whether it changed. `cli` reads glab's
+/// config and `keys` fj's sign-ins, each only when needed.
 pub(super) fn recognize(
     info: &mut RepoInfo,
     cli: impl FnOnce() -> Vec<gitlab::cli_hosts::CliHost>,
+    keys: impl FnOnce() -> forgejo::cli_keys::Keys,
 ) -> bool {
-    info.remote
-        .as_mut()
-        .is_some_and(|remote| gitlab::recognize(&mut remote.source, cli))
+    info.remote.as_mut().is_some_and(|remote| {
+        gitlab::recognize(&mut remote.source, cli) || forgejo::recognize(remote, keys)
+    })
 }
 
 /// Drops beads of any source but `info`'s. A database this build cannot
@@ -97,7 +151,7 @@ pub(super) fn statuses(info: &RepoInfo) -> Vec<SourceStatus> {
 pub fn sources(info: &RepoInfo) -> Vec<(SourceKey, bool)> {
     let remote = info.remote.as_ref().map(|remote| {
         let supported = match remote.source.provider {
-            Provider::Azure => true,
+            Provider::Azure | Provider::Forgejo => true,
             Provider::Github => remote.source.host == "github.com",
             Provider::Gitlab => true,
             Provider::Beads => false,

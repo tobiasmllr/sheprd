@@ -314,6 +314,7 @@ embedded_icons! {
     "external.svg",
     "fan-out.svg",
     "file.svg",
+    "forgejo.svg",
     "git-branch.svg",
     "github.svg",
     "gitlab.svg",

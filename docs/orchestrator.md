@@ -43,7 +43,7 @@ agent-launcher wrote it and check that migration keeps its rows.
 | --- | --- |
 | `model.rs`, `location.rs`, `store.rs` | Records in the database's shapes, its path, and SQLite access. |
 | `repo.rs` | Finding a checkout's repository, main checkout, Beads, and remote on its host. |
-| `github.rs`, `gitlab.rs`, `beads.rs` | The sources: a full listing each. GitHub reads only what changed since the last sync, both listings' first pages in one request, with a full listing again every 30 minutes; a listing larger than 2,000 open items is shown, not stored, and continues from memory the same way, staying capped until a full listing reads it all. GitLab lists its open issues and merge requests in full on every sync. |
+| `github.rs`, `gitlab.rs`, `forgejo.rs`, `beads.rs` | The sources: a full listing each. GitHub reads only what changed since the last sync, both listings' first pages in one request, with a full listing again every 30 minutes; a listing larger than 2,000 open items is shown, not stored, and continues from memory the same way, staying capped until a full listing reads it all. GitLab and Forgejo list their open issues and merge or pull requests in full on every sync. |
 | `review.rs` | Each open pull request's review decision, review requests, checks, and merge state, kept in the database, so a restart shows the last ones until the first sync. A GitHub sync reads them again only when an open pull request's head or update time moved, a check is still running, GitHub answered that it has not worked out the merge state yet, five minutes passed, or the user pressed Refresh. |
 | `service.rs` | The worker thread per open view: sync, reload, and the action queue. Sources sync every minute while the Pull requests or Issues section is shown and every ten minutes otherwise (`service/schedule.rs`); a source failing again waits twice as long each time, up to 30 minutes unless the provider asks for longer. |
 | `actions.rs` | Dispatch, stop, send, remove, delete: each on its own thread. |
@@ -136,6 +136,54 @@ holds leaves it. The actor is `bd`'s own default. Agents start on the database's
 host: embedded databases are not reachable from another, so the dialog offers
 none. `bd` leases a claim for five minutes, which is why the prompt asks for
 `bd heartbeat`; a stale lease is only ever recovered by `bd reclaim`, never here.
+
+## Forgejo
+
+`forgejo.rs` lists a Forgejo repository's open issues and pull requests
+through the REST API (`/api/v1/repos/<owner>/<name>/issues?type=issues` and
+`.../pulls`), on Codeberg or a self-hosted instance. `native_id` is the
+issue's number and `pr/<number>` a pull request's, both shown as `#<number>`;
+a pull request carries its branches, head and base commits, diff size, draft
+state, and head repository. Pull requests are read-only, as GitLab's merge
+requests are: the status, conversation, checks, and merge pages are GitHub's.
+The new worktree dialog's tabs do not list Forgejo yet.
+
+Forgejo's pages are numbered and hold at most 50 items unless the instance's
+administrator raised it, with no bound to continue from as GitLab's
+`created_after` gives. An item opened or closed while the pages are read
+shifts the ones after it, so one could be skipped and then dropped from the
+cache. Each page carries the listing's size (`X-Total-Count`): when it
+changes between pages, or the items read do not add up to it, the listing is
+read once more, and one still moving is shown, not stored, like a listing
+past 2,000 items. A server that answers fewer items than asked is read until
+the count is reached, or until an empty page when it sends no count.
+
+A host's name does not say that Forgejo serves it. `repo.rs` reads a remote
+as Forgejo when its host is codeberg.org or has "forgejo" in its name; any
+other that reads as GitHub is read as Forgejo once the Forgejo CLI knows it
+(`forgejo::recognize`, after glab's say), on every sync, so a sign-in or alias
+added later is picked up without reopening the view. The source key keeps the
+remote's host and path either way.
+
+`forgejo/cli_keys.rs` reads the Forgejo CLI's `keys.json` (`forgejo-cli` in
+the platform's data folder, or the folder releases before fj's rename used):
+`hosts`, a token for each instance by its name, which is its host with a port
+or a path when it is served at one, and `aliases`, the instance another host
+stands for, which fj fills in at sign-in with the SSH host the instance's
+repositories are cloned from when that is another, such as `localhost:2222`
+for `git.example.com`. A remote's
+host is looked up with the port its URL names, which the source key drops for
+SSH, then without. The API is the alias's instance over HTTPS, else the
+remote's own host, over HTTP only when the remote's URL is `http://`.
+
+The token is fj's for that instance, pasted or from OAuth, read on every sync
+and never saved by Sheprd; an OAuth token is used as kept, since fj renews it
+when it next runs. It is sent as `Authorization: token`, only to the instance
+fj keeps it for, only over HTTPS, and no redirect is followed. Without one a
+public repository still lists; Forgejo answers a private one as missing, which
+shows as a failure naming `fj auth login` and `fj auth add-token`, since the
+account menu has no Forgejo page yet. A failure only the user can fix waits
+30 minutes, as GitLab's do.
 
 ## GitLab
 

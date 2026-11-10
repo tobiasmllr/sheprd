@@ -5,7 +5,7 @@
 
 use super::Localize;
 use crate::i18n::fl;
-use sheprd_orchestrator::{Error, beads, gitlab, private_file};
+use sheprd_orchestrator::{Error, beads, forgejo, gitlab, private_file};
 
 impl Localize for Error {
     fn localize(&self) -> String {
@@ -69,6 +69,7 @@ impl Localize for Error {
             Self::BeadId(id) => fl!("error-orchestrator-bead-id", id = format!("{id:?}")),
             Self::Azure(error) => error.localize(),
             Self::Claim(error) => error.localize(),
+            Self::Forgejo(error) => error.localize(),
             Self::Github(error) => error.localize(),
             Self::Gitlab(error) => error.localize(),
             Self::Cancelled => fl!("error-orchestrator-cancelled"),
@@ -147,6 +148,45 @@ impl Localize for private_file::Error {
                 "error-orchestrator-private-not-private",
                 path = path.display().to_string()
             ),
+        }
+    }
+}
+
+impl Localize for forgejo::Error {
+    fn localize(&self) -> String {
+        match self {
+            Self::Address(repository) => fl!(
+                "error-orchestrator-forgejo-address",
+                repository = format!("{repository:?}")
+            ),
+            Self::Authentication => fl!("error-orchestrator-forgejo-authentication"),
+            Self::Forbidden { repository } => fl!(
+                "error-orchestrator-forgejo-forbidden",
+                repository = repository.as_str()
+            ),
+            Self::InsecureRemote { repository } => fl!(
+                "error-orchestrator-forgejo-insecure-remote",
+                repository = repository.as_str()
+            ),
+            Self::Json(error) => fl!("error-orchestrator-forgejo-json", error = error.to_string()),
+            Self::Network { origin, source } => fl!(
+                "error-orchestrator-forgejo-network",
+                origin = origin.as_str(),
+                error = source.to_string()
+            ),
+            Self::NotFound { repository } => fl!(
+                "error-orchestrator-forgejo-not-found",
+                repository = repository.as_str()
+            ),
+            Self::RateLimit => fl!("error-orchestrator-forgejo-rate-limit"),
+            Self::Read(error) => fl!("error-orchestrator-forgejo-read", error = error.to_string()),
+            Self::SignIn { repository } => fl!(
+                "error-orchestrator-forgejo-sign-in",
+                repository = repository.as_str()
+            ),
+            Self::Size => fl!("error-orchestrator-forgejo-size"),
+            Self::Status(status) => fl!("error-orchestrator-forgejo-status", status = *status),
+            Self::Token => fl!("error-orchestrator-forgejo-token"),
         }
     }
 }

@@ -73,6 +73,8 @@ pub enum Error {
     Azure(#[from] super::azure::Error),
     #[error(transparent)]
     Claim(#[from] crate::beads::claim::Error),
+    #[error(transparent)]
+    Forgejo(#[from] super::forgejo::Error),
     /// Shown as GitHub's own failure, which already names GitHub and why.
     #[error("{0}")]
     Github(#[source] Box<sheprd_github::Error>),

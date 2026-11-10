@@ -17,6 +17,8 @@ mod beads_redirect;
 #[cfg(unix)]
 mod beads_script;
 mod combined_changes;
+mod forgejo;
+mod forgejo_keys;
 mod full_listing;
 mod gateway_timeout;
 mod git;

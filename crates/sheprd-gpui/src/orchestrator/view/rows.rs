@@ -673,11 +673,11 @@ pub(crate) fn status_of<'a>(
     statuses: &'a HashMap<(String, u64), PrStatus>,
 ) -> Option<&'a PrStatus> {
     // GitHub's are read and stored; Azure DevOps's come from its listing,
-    // whose repositories have three parts. A GitLab path may equal a GitHub
-    // one, so it never borrows GitHub's.
+    // whose repositories have three parts. A GitLab or Forgejo path may equal
+    // a GitHub one, so it never borrows GitHub's.
     let number = match item.key.source.provider {
         Provider::Github | Provider::Azure => item.pull_request.as_ref()?.number,
-        Provider::Gitlab | Provider::Beads => return None,
+        Provider::Forgejo | Provider::Gitlab | Provider::Beads => return None,
     };
     statuses.get(&(item.key.source.repository.clone(), number))
 }

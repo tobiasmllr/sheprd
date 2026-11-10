@@ -7,7 +7,7 @@ use super::{
     Access, CheckState, Error, HerdrSession, Item, PrStatus, Provider, Result, Run, SourceKey,
     Store,
     actions::{Action, Site},
-    azure, beads, database_path, github, gitlab,
+    azure, beads, database_path, forgejo, github, gitlab,
     location::{database_path_in, legacy_path, legacy_path_in},
     naming,
     prompt::{self, Profile},
@@ -32,6 +32,7 @@ use std::{
 };
 
 mod azure_source;
+mod forgejo_source;
 mod github_source;
 mod gitlab_source;
 pub mod remote;
@@ -80,6 +81,8 @@ pub fn retry_wait(error: &Error, cooldown: Option<Duration>) -> Duration {
         },
         Error::Azure(source) if source.needs_user() => HIDDEN_BACKOFF,
         Error::Azure(_) => BACKOFF,
+        Error::Forgejo(source) if source.needs_user() => HIDDEN_BACKOFF,
+        Error::Forgejo(_) => BACKOFF,
         Error::Gitlab(source) if source.needs_user() => HIDDEN_BACKOFF,
         Error::Gitlab(_) => BACKOFF,
         _ => return BACKOFF,
@@ -642,7 +645,7 @@ impl Worker {
                 return Err(error);
             }
         };
-        recognize(&mut info, gitlab::cli_hosts::read);
+        recognize(&mut info, gitlab::cli_hosts::read, forgejo::cli_keys::read);
         if std::mem::take(&mut self.unreached) {
             self.snapshot.error = None;
         }
@@ -798,7 +801,7 @@ impl Worker {
                 return;
             }
         }
-        self.recognize(gitlab::cli_hosts::read);
+        self.recognize(gitlab::cli_hosts::read, forgejo::cli_keys::read);
         let Some(info) = self.snapshot.repo.clone() else {
             return;
         };
@@ -903,43 +906,16 @@ impl Worker {
                 None => Ok(SyncState::SignIn),
             },
             Provider::Azure => self.sync_azure(key, writable),
+            Provider::Forgejo => {
+                let previous = store.checkpoint(key)?;
+                let listing = self.forgejo_listing(key, previous.as_ref())?;
+                self.keep_listing(key, listing, writable)
+            }
             Provider::Gitlab => {
                 let previous = store.checkpoint(key)?;
                 let listing = self.gitlab_listing(key, previous.as_ref())?;
-                let Some(store) = self.store.as_mut() else {
-                    return Ok(SyncState::Unsupported);
-                };
-                let count = listing.items.len();
-                if !listing.complete || !writable {
-                    self.uncached.insert(key.clone(), listing.items);
-                    return Ok(if listing.complete {
-                        SyncState::Synced {
-                            at: Utc::now(),
-                            count,
-                        }
-                    } else {
-                        SyncState::Capped { count }
-                    });
-                }
-                store.replace_items(key, &listing.items, &listing.checkpoint)?;
-                self.uncached.remove(key);
-                Ok(SyncState::Synced {
-                    at: Utc::now(),
-                    count,
-                })
+                self.keep_listing(key, listing, writable)
             }
-        }
-    }
-
-    /// Reads the shown remote as GitLab once glab knows its host, such as
-    /// through an `ssh_host` added after the repository was found.
-    fn recognize(&mut self, cli: impl FnOnce() -> Vec<gitlab::cli_hosts::CliHost>) {
-        let Some(mut info) = self.snapshot.repo.clone() else {
-            return;
-        };
-        if recognize(&mut info, cli) {
-            self.snapshot.sources = statuses(&info);
-            self.snapshot.repo = Some(info);
         }
     }
 

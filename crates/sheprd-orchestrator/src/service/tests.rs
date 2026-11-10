@@ -31,6 +31,7 @@ fn closing_the_view_does_not_cancel_an_accepted_action() {
 mod azure_replaced;
 mod current_beads;
 mod extras;
+mod fj_mapping;
 mod glab_mapping;
 mod refresh;
 mod stores;

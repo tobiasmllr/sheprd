@@ -16,6 +16,7 @@ pub mod azure;
 pub mod beads;
 pub mod cache;
 mod error;
+pub mod forgejo;
 pub mod git;
 pub mod github;
 pub mod gitlab;

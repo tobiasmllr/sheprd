@@ -18,7 +18,7 @@ Other ways in:
 - `sheprd orchestrator` does the same from a pane, and `sheprd ui panel issues` (or `pull-requests`, `tasks`) shows a section.
 - `sheprd orchestrator items|issues|prs|tasks` prints what was last synced, without the app running.
 
-A section's icon shows its count in the accent color until you open it, then in gray until something changes again. Under the search, pills pick backends (GitHub, GitLab, Beads) and projects, each with its count; with none picked, everything is listed. The window button in the header moves the view into a window of its own.
+A section's icon shows its count in the accent color until you open it, then in gray until something changes again. Under the search, pills pick backends (GitHub, GitLab, Forgejo, Beads) and projects, each with its count; with none picked, everything is listed. The window button in the header moves the view into a window of its own.
 
 A click selects a row. Enter or a double-click opens its page in a pane beside the list; drag the pane's left edge to resize it, or press × to close it.
 
@@ -28,6 +28,7 @@ A click selects a row. Enter or a double-click opens its page in a pane beside t
 | --- | --- | --- |
 | GitHub | Open issues and pull requests | The GitHub account used for pull requests on that host |
 | GitLab | Open issues, on gitlab.com or a self-managed instance | A token or connected account, see below |
+| Forgejo | Open issues and pull requests, on Codeberg or a self-hosted instance | The Forgejo CLI's sign-in, see below |
 | [Beads](https://github.com/steveyegge/beads) | Issues and tasks, when a main checkout has a `.beads` folder | None: read with `bd` |
 
 Folders outside Git are skipped unless they have a `.beads` folder; **Refresh** checks them again. A repository without a GitHub remote has no GitHub source. GitHub Enterprise is not supported yet.
@@ -53,9 +54,17 @@ A self-managed GitLab with a separate SSH host is read from the instance whose `
 glab config set ssh_host gitlab-ssh.example.com --host gitlab.example.com
 ```
 
+### Signing in to Forgejo
+
+Forgejo is read with the [Forgejo CLI](https://codeberg.org/forgejo-contrib/forgejo-cli)'s own sign-in for the instance (`fj auth login` or `fj auth add-token`); Sheprd keeps no Forgejo token of its own. Public repositories need none. A token is sent only to the instance fj keeps it for, and only over HTTPS.
+
+A self-hosted instance's name does not say that Forgejo serves it, so a remote is read as Forgejo when its host is codeberg.org, has "forgejo" in its name, or is one fj is signed in to. When an instance's repositories are cloned over SSH from another host or port, fj notes that host as the instance's alias when you sign in, and such a remote is read from the instance.
+
+Forgejo pull requests are listed only: their status, checks, and merge pages are GitHub's.
+
 ## Issues
 
-**Issues** lists open GitHub or GitLab issues and beads together, grouped by priority. A bead's children sit under it. **Filters** narrows to items with a run, blocked ones, one source, or one label; five sorts are offered. Search matches every word you type across title, ID, author, labels, state, and body, case-insensitively unless a word has a capital.
+**Issues** lists open GitHub, GitLab, or Forgejo issues and beads together, grouped by priority. A bead's children sit under it. **Filters** narrows to items with a run, blocked ones, one source, or one label; five sorts are offered. Search matches every word you type across title, ID, author, labels, state, and body, case-insensitively unless a word has a capital.
 
 An issue's page shows its description, its runs, and its details. **Start agent** on a row opens the dispatch dialog.
 

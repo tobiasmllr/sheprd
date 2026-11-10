@@ -395,6 +395,8 @@ pub fn parse_remote_url(value: &str) -> Result<SourceKey> {
     let host = host.to_ascii_lowercase();
     let provider = if host.contains("gitlab") {
         Provider::Gitlab
+    } else if super::forgejo::named(&host) {
+        Provider::Forgejo
     } else if host.contains("github") || host.contains("ghe") {
         Provider::Github
     } else if repository.matches('/').count() > 1 {

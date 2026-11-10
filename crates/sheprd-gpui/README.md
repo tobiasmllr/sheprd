@@ -2545,7 +2545,7 @@ restart an agent already waiting on you counts as new once.
 
 The activity bar's **Pull requests**, **Issues**, and **Tasks** sections list,
 across the window, every repository the workspaces of every connected local or SSH host
-hold: their GitHub issues and pull requests or GitLab issues, their
+hold: their GitHub or Forgejo issues and pull requests or GitLab issues, their
 [Beads](https://github.com/steveyegge/beads) issues when a main checkout has a
 `.beads` folder, and the agent runs dispatched for them. Folders outside Git
 are quietly skipped unless they have a `.beads` folder; **Refresh** checks
@@ -2560,14 +2560,14 @@ error above it, and finds its repository again on the next sync or Refresh.
 Worktrees of one
 repository count once, and each repository syncs on its own, so up to 32 are
 listed. A row shows its project while several are listed. Under the search, a
-row of pills picks backends (GitHub, GitLab, Beads) and projects, each with its
+row of pills picks backends (GitHub, GitLab, Forgejo, Beads) and projects, each with its
 count; none picked lists all. The Issues row of a group's "…" menu or of a
 workspace's popover, the Show Issues command, and `sheprd orchestrator`
 open the Issues section narrowed to that workspace's project. A repository
 without a GitHub remote has no GitHub source; the header says "no GitHub
 remote" when none of them has one.
 
-- **Issues** lists open GitHub or GitLab issues and beads together, grouped by
+- **Issues** lists open GitHub, GitLab, or Forgejo issues and beads together, grouped by
   priority. A bead's children sit under it. The **Filters** button unfolds a
   column narrowing to items with a run, blocked ones, one source, or one
   label; folded, the filters in use show as chips that clear them. Five sorts
@@ -2684,8 +2684,13 @@ of its own, such as `git@gitlab-ssh.example.com:group/project.git` for an
 instance served at `gitlab.example.com`, is read from the instance whose
 `ssh_host` the GitLab CLI's config names it, at that instance's `api_host` and
 `api_protocol`, with its token (`glab config set ssh_host
-gitlab-ssh.example.com --host gitlab.example.com`). GitHub Enterprise is listed as not
-supported yet. The window button in the tab's header moves the view into
+gitlab-ssh.example.com --host gitlab.example.com`). A Forgejo remote, on
+Codeberg or a self-hosted instance, lists its open issues and pull requests,
+read with the Forgejo CLI's sign-in for that instance (`fj auth login` or
+`fj auth add-token`) and sent only over HTTPS; public repositories need none. A
+host is read as Forgejo when it is codeberg.org, has "forgejo" in its name, or
+is one fj is signed in to, or the SSH host fj noted for an instance when
+signing in. GitHub Enterprise is listed as not supported yet. The window button in the tab's header moves the view into
 a window of its own.
 
 ## Images
